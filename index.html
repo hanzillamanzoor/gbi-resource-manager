@@ -1,0 +1,1266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GBI Resource Manager</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Sora:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#0f1117; --surface:#181c27; --surface2:#1f2436;
+  --border:rgba(255,255,255,0.07); --accent:#4f8ef7; --accent2:#34d399;
+  --accent3:#f59e0b; --accent4:#f87171; --text:#e8eaf0; --muted:#7b82a0;
+  --font:'Sora',sans-serif; --mono:'DM Mono',monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100vh;display:flex;}
+
+/* ── LOGIN ── */
+#login-screen{display:flex;align-items:center;justify-content:center;width:100%;min-height:100vh;background:var(--bg);}
+.login-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:40px 36px;width:380px;max-width:95vw;}
+.login-logo-mark{font-size:11px;font-family:var(--mono);color:var(--accent);letter-spacing:3px;text-transform:uppercase;}
+.login-logo-name{font-size:20px;font-weight:600;margin:6px 0 28px;line-height:1.3;}
+.login-label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px;font-family:var(--mono);}
+.login-input{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--text);font-family:var(--font);font-size:14px;outline:none;transition:border-color 0.15s;margin-bottom:14px;}
+.login-input:focus{border-color:var(--accent);}
+.login-btn{width:100%;padding:11px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-family:var(--font);font-size:14px;font-weight:500;cursor:pointer;transition:background 0.15s;margin-top:6px;}
+.login-btn:hover{background:#3a7be8;}
+.login-err{font-size:12px;color:var(--accent4);margin-top:8px;text-align:center;min-height:18px;}
+.login-hint{font-size:11px;color:var(--muted);text-align:center;margin-top:18px;font-family:var(--mono);}
+
+/* ── APP WRAPPER ── */
+#app{display:none;width:100%;}
+
+/* ── SIDEBAR ── */
+.sidebar{width:220px;min-height:100vh;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;}
+.logo{padding:24px 20px 20px;border-bottom:1px solid var(--border);}
+.logo-mark{font-size:11px;font-family:var(--mono);color:var(--accent);letter-spacing:3px;text-transform:uppercase;}
+.logo-name{font-size:15px;font-weight:600;margin-top:4px;line-height:1.3;}
+.nav{padding:16px 0;flex:1;}
+.nav-section{font-size:10px;font-family:var(--mono);color:var(--muted);letter-spacing:2px;text-transform:uppercase;padding:8px 20px 4px;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 20px;font-size:13px;cursor:pointer;color:var(--muted);transition:all 0.15s;border-left:2px solid transparent;}
+.nav-item:hover{color:var(--text);background:rgba(255,255,255,0.04);}
+.nav-item.active{color:var(--accent);background:rgba(79,142,247,0.08);border-left-color:var(--accent);}
+.nav-icon{width:16px;text-align:center;font-size:14px;}
+.sidebar-footer{padding:16px 20px;border-top:1px solid var(--border);font-size:11px;color:var(--muted);font-family:var(--mono);}
+.user-pill{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+.user-avatar{width:24px;height:24px;border-radius:50%;background:rgba(79,142,247,0.25);color:var(--accent);font-size:10px;font-weight:600;display:flex;align-items:center;justify-content:center;}
+.logout-btn{width:100%;background:none;border:1px solid var(--border);border-radius:6px;padding:5px;color:var(--muted);font-family:var(--mono);font-size:10px;cursor:pointer;margin-top:6px;transition:all 0.15s;letter-spacing:1px;}
+.logout-btn:hover{color:var(--accent4);border-color:var(--accent4);}
+
+/* ── MAIN ── */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.topbar{padding:18px 28px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:var(--surface);}
+.page-title{font-size:16px;font-weight:600;}
+.page-sub{font-size:12px;color:var(--muted);margin-top:1px;}
+.topbar-actions{display:flex;gap:10px;}
+.btn{padding:8px 16px;border-radius:7px;font-size:12px;font-family:var(--font);font-weight:500;cursor:pointer;border:1px solid var(--border);background:var(--surface2);color:var(--text);transition:all 0.15s;}
+.btn:hover{background:rgba(255,255,255,0.08);}
+.btn-primary{background:var(--accent);color:#fff;border-color:var(--accent);}
+.btn-primary:hover{background:#3a7be8;}
+.btn-success{background:var(--accent2);color:#0f1117;border-color:var(--accent2);}
+.btn-success:hover{opacity:0.85;}
+.btn-export{background:rgba(245,158,11,0.15);color:var(--accent3);border-color:rgba(245,158,11,0.3);}
+.btn-export:hover{background:rgba(245,158,11,0.25);}
+.content{flex:1;overflow-y:auto;padding:24px 28px;}
+
+/* ── STATS ── */
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px;}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:18px;position:relative;overflow:hidden;}
+.stat-card::before{content:'';position:absolute;top:0;right:0;width:60px;height:60px;border-radius:0 10px 0 60px;opacity:0.12;}
+.stat-card.blue::before{background:var(--accent);}
+.stat-card.green::before{background:var(--accent2);}
+.stat-card.amber::before{background:var(--accent3);}
+.stat-card.red::before{background:var(--accent4);}
+.stat-label{font-size:11px;color:var(--muted);font-family:var(--mono);letter-spacing:1px;text-transform:uppercase;}
+.stat-val{font-size:28px;font-weight:600;margin:6px 0 2px;}
+.stat-card.blue .stat-val{color:var(--accent);}
+.stat-card.green .stat-val{color:var(--accent2);}
+.stat-card.amber .stat-val{color:var(--accent3);}
+.stat-card.red .stat-val{color:var(--accent4);}
+.stat-hint{font-size:11px;color:var(--muted);}
+
+/* ── PANELS ── */
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:10px;margin-bottom:20px;}
+.panel-header{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.panel-title{font-size:13px;font-weight:600;}
+.panel-body{padding:18px;}
+
+/* ── TABLE ── */
+table{width:100%;border-collapse:collapse;font-size:13px;}
+th{text-align:left;padding:8px 12px;font-size:10px;font-family:var(--mono);color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;border-bottom:1px solid var(--border);font-weight:400;}
+td{padding:11px 12px;border-bottom:1px solid rgba(255,255,255,0.04);vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:rgba(255,255,255,0.02);}
+.badge{display:inline-block;padding:3px 9px;border-radius:20px;font-size:11px;font-family:var(--mono);font-weight:500;}
+.badge-blue{background:rgba(79,142,247,0.15);color:var(--accent);}
+.badge-green{background:rgba(52,211,153,0.15);color:var(--accent2);}
+.badge-amber{background:rgba(245,158,11,0.15);color:var(--accent3);}
+.badge-red{background:rgba(248,113,113,0.15);color:var(--accent4);}
+.badge-gray{background:rgba(123,130,160,0.15);color:var(--muted);}
+.badge-purple{background:rgba(167,139,250,0.15);color:#a78bfa;}
+.action-btn{padding:4px 10px;border-radius:5px;font-size:11px;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:var(--font);transition:all 0.15s;}
+.action-btn:hover{color:var(--text);background:rgba(255,255,255,0.06);}
+.action-btn.edit{color:var(--accent);border-color:rgba(79,142,247,0.3);}
+.action-btn.edit:hover{background:rgba(79,142,247,0.1);}
+.action-btn.del{color:var(--accent4);border-color:rgba(248,113,113,0.3);}
+.action-btn.del:hover{background:rgba(248,113,113,0.1);}
+.actions-cell{display:flex;gap:5px;flex-wrap:nowrap;}
+
+/* ── MODAL ── */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:100;align-items:center;justify-content:center;}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:12px;width:520px;max-width:95vw;max-height:90vh;overflow-y:auto;}
+.modal-header{padding:18px 22px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;}
+.modal-title{font-size:14px;font-weight:600;}
+.modal-close{background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer;line-height:1;}
+.modal-close:hover{color:var(--text);}
+.modal-body{padding:22px;}
+.form-group{margin-bottom:16px;}
+label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px;font-family:var(--mono);}
+input,select,textarea{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:7px;padding:9px 12px;color:var(--text);font-family:var(--font);font-size:13px;outline:none;transition:border-color 0.15s;}
+input:focus,select:focus,textarea:focus{border-color:var(--accent);}
+select option{background:var(--surface2);}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.modal-footer{padding:14px 22px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:10px;}
+
+/* ── PAGE SECTIONS ── */
+.section{display:none;}
+.section.active{display:block;}
+
+/* ── SEARCH ── */
+.search-bar{display:flex;gap:10px;margin-bottom:18px;}
+.search-input{flex:1;background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:9px 14px;color:var(--text);font-family:var(--font);font-size:13px;outline:none;}
+.search-input:focus{border-color:var(--accent);}
+
+/* ── TABS ── */
+.tabs{display:flex;gap:4px;margin-bottom:18px;}
+.tab{padding:7px 16px;border-radius:6px;font-size:12px;cursor:pointer;color:var(--muted);border:1px solid transparent;transition:all 0.15s;}
+.tab:hover{color:var(--text);}
+.tab.active{background:rgba(79,142,247,0.12);color:var(--accent);border-color:rgba(79,142,247,0.25);}
+
+/* ── DEMAND CARD ── */
+.demand-card{background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:16px;margin-bottom:12px;}
+.demand-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;}
+.demand-title{font-size:13px;font-weight:500;}
+.demand-meta{font-size:11px;color:var(--muted);font-family:var(--mono);margin-top:3px;}
+.demand-actions{display:flex;gap:6px;}
+.demand-type-section{margin-top:10px;padding-top:10px;border-top:1px solid var(--border);}
+.demand-type-label{font-size:10px;font-family:var(--mono);color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;}
+.demand-type-row{display:flex;gap:8px;align-items:center;margin-bottom:4px;flex-wrap:wrap;}
+
+.empty-state{text-align:center;padding:40px;color:var(--muted);font-size:13px;}
+::-webkit-scrollbar{width:5px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.1);border-radius:3px;}
+
+/* ── EXPORT PANEL ── */
+.export-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
+.export-card{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:20px;text-align:center;cursor:pointer;transition:all 0.15s;}
+.export-card:hover{border-color:var(--accent3);background:rgba(245,158,11,0.05);}
+.export-icon{font-size:28px;margin-bottom:10px;}
+.export-name{font-size:13px;font-weight:500;margin-bottom:4px;}
+.export-desc{font-size:11px;color:var(--muted);}
+</style>
+</head>
+<body>
+
+<!-- ══════════════ LOGIN SCREEN ══════════════ -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-logo-mark">GBI v2.0</div>
+    <div class="login-logo-name">GBI Resource<br>Manager</div>
+    <label class="login-label">Username</label>
+    <input class="login-input" id="login-user" placeholder="Enter username" onkeydown="if(event.key==='Enter')doLogin()">
+    <label class="login-label">Password</label>
+    <input class="login-input" id="login-pass" type="password" placeholder="Enter password" onkeydown="if(event.key==='Enter')doLogin()">
+    <button class="login-btn" onclick="doLogin()">Sign In</button>
+    <div class="login-err" id="login-err"></div>
+    <div class="login-hint">Default: admin / admin123 &nbsp;|&nbsp; manager / manager123</div>
+  </div>
+</div>
+
+<!-- ══════════════ APP ══════════════ -->
+<div id="app">
+
+<!-- SIDEBAR -->
+<div class="sidebar">
+  <div class="logo">
+    <div class="logo-mark">GBI v2.0</div>
+    <div class="logo-name">GBI Resource<br>Manager</div>
+  </div>
+  <nav class="nav">
+    <div class="nav-section">Overview</div>
+    <div class="nav-item active" onclick="showSection('dashboard',this)"><span class="nav-icon">▦</span> Dashboard</div>
+    <div class="nav-section">Inventory</div>
+    <div class="nav-item" onclick="showSection('inventory',this)"><span class="nav-icon">◫</span> All Items</div>
+    <div class="nav-item" onclick="showSection('purchases',this)"><span class="nav-icon">◈</span> Purchases</div>
+    <div class="nav-item" onclick="showSection('issuances',this)"><span class="nav-icon">◉</span> Issuances</div>
+    <div class="nav-section">Employees</div>
+    <div class="nav-item" onclick="showSection('demands',this)"><span class="nav-icon">◎</span> Demands</div>
+    <div class="nav-item" onclick="showSection('employees',this)"><span class="nav-icon">◷</span> Employees</div>
+    <div class="nav-section">Reports</div>
+    <div class="nav-item" onclick="showSection('reports',this)"><span class="nav-icon">↓</span> Export Reports</div>
+    <div class="nav-section admin-only" id="nav-admin-section">Admin</div>
+    <div class="nav-item admin-only" id="nav-users" onclick="showSection('users',this)"><span class="nav-icon">⊕</span> Manage Users</div>
+  </nav>
+  <div class="sidebar-footer">
+    <div class="user-pill">
+      <div class="user-avatar" id="user-avatar">A</div>
+      <span id="user-label" style="font-size:11px;"></span>
+    </div>
+    <button class="logout-btn" onclick="doLogout()">SIGN OUT</button>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="topbar">
+    <div>
+      <div class="page-title" id="page-title">Dashboard</div>
+      <div class="page-sub" id="page-sub">GBI Resource Manager — Overview</div>
+    </div>
+    <div class="topbar-actions" id="topbar-actions">
+      <button class="btn btn-primary" onclick="openModal('modal-item')">+ Add Item</button>
+      <button class="btn btn-success" onclick="openModal('modal-purchase')">+ Log Purchase</button>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- DASHBOARD -->
+    <div class="section active" id="section-dashboard">
+      <div class="stats-grid">
+        <div class="stat-card blue"><div class="stat-label">Total Items</div><div class="stat-val" id="stat-items">0</div><div class="stat-hint">In inventory</div></div>
+        <div class="stat-card green"><div class="stat-label">Available</div><div class="stat-val" id="stat-available">0</div><div class="stat-hint">Ready to issue</div></div>
+        <div class="stat-card amber"><div class="stat-label">Issued</div><div class="stat-val" id="stat-issued">0</div><div class="stat-hint">With employees</div></div>
+        <div class="stat-card red"><div class="stat-label">Pending Demands</div><div class="stat-val" id="stat-demands">0</div><div class="stat-hint">Awaiting action</div></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+        <div class="panel">
+          <div class="panel-header"><span class="panel-title">Recent Purchases</span><button class="action-btn" onclick="showSection('purchases',document.querySelector('[onclick*=purchases]'))">View all</button></div>
+          <div class="panel-body" style="padding:0;"><table><thead><tr><th>Item</th><th>Qty</th><th>Cost</th><th>Date</th></tr></thead><tbody id="dash-purchases"><tr><td colspan="4" class="empty-state">No purchases yet</td></tr></tbody></table></div>
+        </div>
+        <div class="panel">
+          <div class="panel-header"><span class="panel-title">Recent Issuances</span><button class="action-btn" onclick="showSection('issuances',document.querySelector('[onclick*=issuances]'))">View all</button></div>
+          <div class="panel-body" style="padding:0;"><table><thead><tr><th>Item</th><th>Employee</th><th>Type</th><th>Date</th></tr></thead><tbody id="dash-issuances"><tr><td colspan="4" class="empty-state">No issuances yet</td></tr></tbody></table></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- INVENTORY -->
+    <div class="section" id="section-inventory">
+      <div class="search-bar">
+        <input class="search-input" placeholder="Search items..." oninput="renderInventory(this.value)">
+        <button class="btn btn-primary" onclick="openModal('modal-item')">+ Add Item</button>
+      </div>
+      <div class="tabs">
+        <div class="tab active" onclick="filterInventory('all',this)">All</div>
+        <div class="tab" onclick="filterInventory('IT Equipment',this)">IT Equipment</div>
+        <div class="tab" onclick="filterInventory('Office Supplies',this)">Office Supplies</div>
+        <div class="tab" onclick="filterInventory('Furniture',this)">Furniture</div>
+        <div class="tab" onclick="filterInventory('Other',this)">Other</div>
+      </div>
+      <div class="panel"><div class="panel-body" style="padding:0;">
+        <table><thead><tr><th>Item Name</th><th>Category</th><th>Total Qty</th><th>Available</th><th>Issued</th><th>Unit Cost</th><th>Status</th><th>Actions</th></tr></thead>
+        <tbody id="inventory-table"><tr><td colspan="8" class="empty-state">No items yet.</td></tr></tbody></table>
+      </div></div>
+    </div>
+
+    <!-- PURCHASES -->
+    <div class="section" id="section-purchases">
+      <div class="search-bar">
+        <input class="search-input" placeholder="Search purchases..." oninput="renderPurchases(this.value)">
+        <button class="btn btn-success" onclick="openModal('modal-purchase')">+ Log Purchase</button>
+        <button class="btn btn-export" onclick="exportSheet('purchases')">⬇ Export Excel</button>
+      </div>
+      <div class="panel"><div class="panel-body" style="padding:0;">
+        <table><thead><tr><th>Item</th><th>Vendor</th><th>Qty</th><th>Unit Cost</th><th>Total</th><th>Invoice #</th><th>Date</th><th>Added By</th><th>Actions</th></tr></thead>
+        <tbody id="purchases-table"><tr><td colspan="8" class="empty-state">No purchases recorded.</td></tr></tbody></table>
+      </div></div>
+    </div>
+
+    <!-- ISSUANCES -->
+    <div class="section" id="section-issuances">
+      <div class="search-bar">
+        <input class="search-input" placeholder="Search issuances..." oninput="renderIssuances(this.value)">
+        <button class="btn btn-primary" onclick="openModal('modal-issue')">+ Issue Item</button>
+        <button class="btn btn-export" onclick="exportSheet('issuances')">⬇ Export Excel</button>
+      </div>
+      <div class="panel"><div class="panel-body" style="padding:0;">
+        <table><thead><tr><th>Item</th><th>Employee</th><th>Dept</th><th>Qty</th><th>Type</th><th>Issue Date</th><th>Return Date</th><th>Status</th><th>Actions</th></tr></thead>
+        <tbody id="issuances-table"><tr><td colspan="9" class="empty-state">No issuances recorded.</td></tr></tbody></table>
+      </div></div>
+    </div>
+
+    <!-- DEMANDS -->
+    <div class="section" id="section-demands">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
+        <div class="tabs" style="margin:0;">
+          <div class="tab active" onclick="filterDemands('all',this)">All</div>
+          <div class="tab" onclick="filterDemands('Pending',this)">Pending</div>
+          <div class="tab" onclick="filterDemands('Approved',this)">Approved</div>
+          <div class="tab" onclick="filterDemands('Rejected',this)">Rejected</div>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-export" onclick="exportSheet('demands')">⬇ Export Excel</button>
+          <button class="btn btn-primary" onclick="openModal('modal-demand')">+ New Demand</button>
+        </div>
+      </div>
+      <div id="demands-list"><div class="empty-state">No demands submitted.</div></div>
+    </div>
+
+    <!-- EMPLOYEES -->
+    <div class="section" id="section-employees">
+      <div class="search-bar">
+        <input class="search-input" placeholder="Search employees..." oninput="renderEmployees(this.value)">
+        <button class="btn btn-primary" onclick="openModal('modal-employee')">+ Add Employee</button>
+        <button class="btn btn-export" onclick="exportSheet('employees')">⬇ Export Excel</button>
+      </div>
+      <div class="panel"><div class="panel-body" style="padding:0;">
+        <table><thead><tr><th>Name</th><th>Designation</th><th>Department</th><th>Employee ID</th><th>Items Held</th><th>Contact</th><th>Actions</th></tr></thead>
+        <tbody id="employees-table"><tr><td colspan="6" class="empty-state">No employees added.</td></tr></tbody></table>
+      </div></div>
+    </div>
+
+    <!-- REPORTS / EXPORT -->
+    <div class="section" id="section-reports">
+      <div style="margin-bottom:20px;">
+        <p style="font-size:13px;color:var(--muted);margin-bottom:18px;">Download any module as an Excel (.xlsx) spreadsheet for offline use and record-keeping.</p>
+        <div class="export-grid">
+          <div class="export-card" onclick="exportSheet('inventory')">
+            <div class="export-icon">📦</div>
+            <div class="export-name">Inventory Report</div>
+            <div class="export-desc">All items, stock levels & costs</div>
+          </div>
+          <div class="export-card" onclick="exportSheet('purchases')">
+            <div class="export-icon">🛒</div>
+            <div class="export-name">Purchase Register</div>
+            <div class="export-desc">Full purchase history with vendors</div>
+          </div>
+          <div class="export-card" onclick="exportSheet('issuances')">
+            <div class="export-icon">📤</div>
+            <div class="export-name">Issuance Register</div>
+            <div class="export-desc">Items issued to employees</div>
+          </div>
+          <div class="export-card" onclick="exportSheet('demands')">
+            <div class="export-icon">📋</div>
+            <div class="export-name">Demands Report</div>
+            <div class="export-desc">All demands with statuses</div>
+          </div>
+          <div class="export-card" onclick="exportSheet('employees')">
+            <div class="export-icon">👥</div>
+            <div class="export-name">Employee Directory</div>
+            <div class="export-desc">Staff list with asset holdings</div>
+          </div>
+          <div class="export-card" onclick="exportSheet('all')">
+            <div class="export-icon">📊</div>
+            <div class="export-name">Full Report (All)</div>
+            <div class="export-desc">All data in one workbook</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MANAGE USERS (admin only) -->
+    <div class="section" id="section-users">
+      <div class="search-bar">
+        <button class="btn btn-primary" onclick="openModal('modal-user')">+ Add User</button>
+      </div>
+      <div class="panel"><div class="panel-body" style="padding:0;">
+        <table><thead><tr><th>Username</th><th>Role</th><th>Added</th><th>Actions</th></tr></thead>
+        <tbody id="users-table"></tbody></table>
+      </div></div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+</div><!-- /app -->
+
+<!-- ══════════════ MODALS ══════════════ -->
+
+<!-- ADD ITEM -->
+<div class="modal-overlay" id="modal-item">
+  <div class="modal">
+    <div class="modal-header"><span class="modal-title">Add Inventory Item</span><button class="modal-close" onclick="closeModal('modal-item')">✕</button></div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group"><label>Item Name *</label><input id="item-name" placeholder="e.g. Dell Laptop"></div>
+        <div class="form-group"><label>Category *</label><select id="item-category"><option>IT Equipment</option><option>Office Supplies</option><option>Furniture</option><option>Other</option></select></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Initial Quantity</label><input id="item-qty" type="number" min="0" value="0"></div>
+        <div class="form-group"><label>Unit Cost (PKR)</label><input id="item-cost" type="number" min="0" value="0"></div>
+      </div>
+      <div class="form-group"><label>Description</label><textarea id="item-desc" rows="2" placeholder="Brief description..."></textarea></div>
+    </div>
+    <div class="modal-footer"><button class="btn" onclick="closeModal('modal-item')">Cancel</button><button class="btn btn-primary" onclick="addItem()">Add Item</button></div>
+  </div>
+</div>
+
+<!-- LOG PURCHASE -->
+<div class="modal-overlay" id="modal-purchase">
+  <div class="modal">
+    <div class="modal-header"><span class="modal-title">Log Purchase</span><button class="modal-close" onclick="closeModal('modal-purchase')">✕</button></div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group"><label>Item *</label><select id="pur-item"></select></div>
+        <div class="form-group"><label>Vendor / Supplier</label><input id="pur-vendor" placeholder="e.g. Tech Mart"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Quantity *</label><input id="pur-qty" type="number" min="1" value="1"></div>
+        <div class="form-group"><label>Unit Cost (PKR)</label><input id="pur-cost" type="number" min="0" value="0"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Invoice Number</label><input id="pur-invoice" placeholder="INV-001"></div>
+        <div class="form-group"><label>Purchase Date</label><input id="pur-date" type="date"></div>
+      </div>
+      <div class="form-group"><label>Added By</label><input id="pur-by" placeholder="Your name"></div>
+    </div>
+    <div class="modal-footer"><button class="btn" onclick="closeModal('modal-purchase')">Cancel</button><button class="btn btn-success" onclick="logPurchase()">Log Purchase</button></div>
+  </div>
+</div>
+
+<!-- ISSUE ITEM -->
+<div class="modal-overlay" id="modal-issue">
+  <div class="modal">
+    <div class="modal-header"><span class="modal-title">Issue Item to Employee</span><button class="modal-close" onclick="closeModal('modal-issue')">✕</button></div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group"><label>Item *</label><select id="iss-item"></select></div>
+        <div class="form-group"><label>Employee *</label><select id="iss-emp"></select></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Quantity</label><input id="iss-qty" type="number" min="1" value="1"></div>
+        <div class="form-group"><label>Issue Type</label><select id="iss-type"><option>Asset (Permanent)</option><option>Official Use (Temporary)</option></select></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Issue Date</label><input id="iss-date" type="date"></div>
+        <div class="form-group"><label>Expected Return (if temp)</label><input id="iss-return" type="date"></div>
+      </div>
+      <div class="form-group"><label>Notes</label><textarea id="iss-notes" rows="2" placeholder="Any remarks..."></textarea></div>
+    </div>
+    <div class="modal-footer"><button class="btn" onclick="closeModal('modal-issue')">Cancel</button><button class="btn btn-primary" onclick="issueItem()">Issue Item</button></div>
+  </div>
+</div>
+
+<!-- DEMAND -->
+<div class="modal-overlay" id="modal-demand">
+  <div class="modal">
+    <div class="modal-header"><span class="modal-title">Submit Demand</span><button class="modal-close" onclick="closeModal('modal-demand')">✕</button></div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group"><label>Employee *</label><select id="dem-emp"></select></div>
+        <div class="form-group"><label>Item Requested *</label><input id="dem-item" placeholder="e.g. Office Chair"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Quantity</label><input id="dem-qty" type="number" min="1" value="1"></div>
+        <div class="form-group"><label>Priority</label><select id="dem-priority"><option>Low</option><option>Medium</option><option>High</option><option>Urgent</option></select></div>
+      </div>
+      <div class="form-group"><label>Demand Type</label>
+        <select id="dem-type">
+          <option value="Purchase Request">Purchase Request (Item to be bought)</option>
+          <option value="Issuance Request">Issuance Request (Item from stock)</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Reason / Justification</label><textarea id="dem-reason" rows="3" placeholder="Why is this item needed?"></textarea></div>
+    </div>
+    <div class="modal-footer"><button class="btn" onclick="closeModal('modal-demand')">Cancel</button><button class="btn btn-primary" onclick="submitDemand()">Submit Demand</button></div>
+  </div>
+</div>
+
+<!-- EMPLOYEE -->
+<div class="modal-overlay" id="modal-employee">
+  <div class="modal">
+    <div class="modal-header"><span class="modal-title">Add Employee</span><button class="modal-close" onclick="closeModal('modal-employee')">✕</button></div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group"><label>Full Name *</label><input id="emp-name" placeholder="e.g. Ahmed Khan"></div>
+        <div class="form-group"><label>Employee ID *</label><input id="emp-id" placeholder="e.g. EMP-001"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Designation</label><input id="emp-desig" placeholder="e.g. Manager"></div>
+        <div class="form-group"><label>Department</label><input id="emp-dept" placeholder="e.g. Finance"></div>
+      </div>
+      <div class="form-group"><label>Contact / Email</label><input id="emp-contact" placeholder="email or phone"></div>
+    </div>
+    <div class="modal-footer"><button class="btn" onclick="closeModal('modal-employee')">Cancel</button><button class="btn btn-primary" onclick="addEmployee()">Add Employee</button></div>
+  </div>
+</div>
+
+<!-- ADD USER (admin) -->
+<div class="modal-overlay" id="modal-user">
+  <div class="modal">
+    <div class="modal-header"><span class="modal-title">Add User Account</span><button class="modal-close" onclick="closeModal('modal-user')">✕</button></div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group"><label>Username *</label><input id="usr-name" placeholder="e.g. john_doe"></div>
+        <div class="form-group"><label>Password *</label><input id="usr-pass" type="password" placeholder="Min 6 characters"></div>
+      </div>
+      <div class="form-group"><label>Role</label>
+        <select id="usr-role"><option value="admin">Admin (full access)</option><option value="manager">Manager (approve/reject)</option><option value="staff">Staff (view + submit demands)</option></select>
+      </div>
+    </div>
+    <div class="modal-footer"><button class="btn" onclick="closeModal('modal-user')">Cancel</button><button class="btn btn-primary" onclick="addUser()">Create User</button></div>
+  </div>
+</div>
+
+<!-- REJECT REASON MODAL -->
+<div class="modal-overlay" id="modal-reject">
+  <div class="modal" style="width:400px;">
+    <div class="modal-header"><span class="modal-title">Reject Demand</span><button class="modal-close" onclick="closeModal('modal-reject')">✕</button></div>
+    <div class="modal-body">
+      <div class="form-group"><label>Reason for Rejection</label><textarea id="reject-reason" rows="3" placeholder="Provide a reason..."></textarea></div>
+      <input type="hidden" id="reject-id">
+    </div>
+    <div class="modal-footer"><button class="btn" onclick="closeModal('modal-reject')">Cancel</button><button class="btn" style="background:rgba(248,113,113,0.15);color:var(--accent4);border-color:var(--accent4);" onclick="confirmReject()">Confirm Reject</button></div>
+  </div>
+</div>
+
+<!-- EDIT ITEM MODAL -->
+<div class="modal-overlay" id="modal-edit-item">
+  <div class="modal">
+    <div class="modal-header"><span class="modal-title">Edit Item</span><button class="modal-close" onclick="closeModal('modal-edit-item')">✕</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="edit-item-id">
+      <div class="form-row">
+        <div class="form-group"><label>Item Name *</label><input id="edit-item-name" placeholder="e.g. Dell Laptop"></div>
+        <div class="form-group"><label>Category *</label><select id="edit-item-category"><option>IT Equipment</option><option>Office Supplies</option><option>Furniture</option><option>Other</option></select></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Total Quantity</label><input id="edit-item-qty" type="number" min="0"></div>
+        <div class="form-group"><label>Unit Cost (PKR)</label><input id="edit-item-cost" type="number" min="0"></div>
+      </div>
+      <div class="form-group"><label>Description</label><textarea id="edit-item-desc" rows="2"></textarea></div>
+    </div>
+    <div class="modal-footer"><button class="btn" onclick="closeModal('modal-edit-item')">Cancel</button><button class="btn btn-primary" onclick="saveEditItem()">Save Changes</button></div>
+  </div>
+</div>
+
+<!-- EDIT PURCHASE MODAL -->
+<div class="modal-overlay" id="modal-edit-purchase">
+  <div class="modal">
+    <div class="modal-header"><span class="modal-title">Edit Purchase</span><button class="modal-close" onclick="closeModal('modal-edit-purchase')">✕</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="edit-pur-id">
+      <div class="form-row">
+        <div class="form-group"><label>Item Name</label><input id="edit-pur-item" readonly style="opacity:0.6;cursor:not-allowed;"></div>
+        <div class="form-group"><label>Vendor / Supplier</label><input id="edit-pur-vendor" placeholder="e.g. Tech Mart"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Quantity *</label><input id="edit-pur-qty" type="number" min="1"></div>
+        <div class="form-group"><label>Unit Cost (PKR)</label><input id="edit-pur-cost" type="number" min="0"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Invoice Number</label><input id="edit-pur-invoice"></div>
+        <div class="form-group"><label>Purchase Date</label><input id="edit-pur-date" type="date"></div>
+      </div>
+      <div class="form-group"><label>Added By</label><input id="edit-pur-by"></div>
+    </div>
+    <div class="modal-footer"><button class="btn" onclick="closeModal('modal-edit-purchase')">Cancel</button><button class="btn btn-primary" onclick="saveEditPurchase()">Save Changes</button></div>
+  </div>
+</div>
+
+<!-- EDIT ISSUANCE MODAL -->
+<div class="modal-overlay" id="modal-edit-issuance">
+  <div class="modal">
+    <div class="modal-header"><span class="modal-title">Edit Issuance</span><button class="modal-close" onclick="closeModal('modal-edit-issuance')">✕</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="edit-iss-id">
+      <div class="form-row">
+        <div class="form-group"><label>Item</label><input id="edit-iss-item" readonly style="opacity:0.6;cursor:not-allowed;"></div>
+        <div class="form-group"><label>Employee</label><input id="edit-iss-emp" readonly style="opacity:0.6;cursor:not-allowed;"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Quantity</label><input id="edit-iss-qty" type="number" min="1"></div>
+        <div class="form-group"><label>Issue Type</label><select id="edit-iss-type"><option>Asset (Permanent)</option><option>Official Use (Temporary)</option></select></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Issue Date</label><input id="edit-iss-date" type="date"></div>
+        <div class="form-group"><label>Expected Return</label><input id="edit-iss-return" type="date"></div>
+      </div>
+      <div class="form-group"><label>Notes</label><textarea id="edit-iss-notes" rows="2"></textarea></div>
+    </div>
+    <div class="modal-footer"><button class="btn" onclick="closeModal('modal-edit-issuance')">Cancel</button><button class="btn btn-primary" onclick="saveEditIssuance()">Save Changes</button></div>
+  </div>
+</div>
+
+<!-- EDIT DEMAND MODAL -->
+<div class="modal-overlay" id="modal-edit-demand">
+  <div class="modal">
+    <div class="modal-header"><span class="modal-title">Edit Demand</span><button class="modal-close" onclick="closeModal('modal-edit-demand')">✕</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="edit-dem-id">
+      <div class="form-row">
+        <div class="form-group"><label>Employee</label><input id="edit-dem-emp" readonly style="opacity:0.6;cursor:not-allowed;"></div>
+        <div class="form-group"><label>Item Requested *</label><input id="edit-dem-item"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Quantity</label><input id="edit-dem-qty" type="number" min="1"></div>
+        <div class="form-group"><label>Priority</label><select id="edit-dem-priority"><option>Low</option><option>Medium</option><option>High</option><option>Urgent</option></select></div>
+      </div>
+      <div class="form-group"><label>Demand Type</label>
+        <select id="edit-dem-type">
+          <option value="Purchase Request">Purchase Request (Item to be bought)</option>
+          <option value="Issuance Request">Issuance Request (Item from stock)</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Reason / Justification</label><textarea id="edit-dem-reason" rows="3"></textarea></div>
+    </div>
+    <div class="modal-footer"><button class="btn" onclick="closeModal('modal-edit-demand')">Cancel</button><button class="btn btn-primary" onclick="saveEditDemand()">Save Changes</button></div>
+  </div>
+</div>
+
+<!-- EDIT EMPLOYEE MODAL -->
+<div class="modal-overlay" id="modal-edit-employee">
+  <div class="modal">
+    <div class="modal-header"><span class="modal-title">Edit Employee</span><button class="modal-close" onclick="closeModal('modal-edit-employee')">✕</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="edit-emp-id">
+      <div class="form-row">
+        <div class="form-group"><label>Full Name *</label><input id="edit-emp-name"></div>
+        <div class="form-group"><label>Employee ID *</label><input id="edit-emp-empid"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Designation</label><input id="edit-emp-desig"></div>
+        <div class="form-group"><label>Department</label><input id="edit-emp-dept"></div>
+      </div>
+      <div class="form-group"><label>Contact / Email</label><input id="edit-emp-contact"></div>
+    </div>
+    <div class="modal-footer"><button class="btn" onclick="closeModal('modal-edit-employee')">Cancel</button><button class="btn btn-primary" onclick="saveEditEmployee()">Save Changes</button></div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+// ══════════════════════════════════════
+//  DATA STORE
+// ══════════════════════════════════════
+const DEFAULT_USERS = [
+  { id:'u1', username:'admin',   password:'admin123',   role:'admin' },
+  { id:'u2', username:'manager', password:'manager123', role:'manager' }
+];
+
+let db = { items:[], purchases:[], issuances:[], demands:[], employees:[], users:[] };
+let currentUser = null;
+
+function save() { try { localStorage.setItem('gbi_db', JSON.stringify(db)); } catch(e){} }
+function load() {
+  try {
+    const d = localStorage.getItem('gbi_db');
+    if(d) db = JSON.parse(d);
+    if(!db.users || !db.users.length) db.users = JSON.parse(JSON.stringify(DEFAULT_USERS));
+  } catch(e) { db.users = JSON.parse(JSON.stringify(DEFAULT_USERS)); }
+}
+load();
+
+// ══════════════════════════════════════
+//  AUTH
+// ══════════════════════════════════════
+function doLogin() {
+  const u = document.getElementById('login-user').value.trim();
+  const p = document.getElementById('login-pass').value;
+  const user = db.users.find(x => x.username === u && x.password === p);
+  if(!user) { document.getElementById('login-err').textContent = 'Invalid username or password.'; return; }
+  currentUser = user;
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'flex';
+  document.getElementById('user-label').textContent = user.username;
+  document.getElementById('user-avatar').textContent = user.username[0].toUpperCase();
+  // show/hide admin nav
+  const adminEls = document.querySelectorAll('.admin-only');
+  adminEls.forEach(el => el.style.display = user.role === 'admin' ? '' : 'none');
+  renderAll();
+}
+
+function doLogout() {
+  currentUser = null;
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('login-user').value = '';
+  document.getElementById('login-pass').value = '';
+  document.getElementById('login-err').textContent = '';
+}
+
+// ══════════════════════════════════════
+//  HELPERS
+// ══════════════════════════════════════
+function today() { return new Date().toISOString().split('T')[0]; }
+function fmtDate(d) { if(!d) return '—'; return new Date(d).toLocaleDateString('en-PK',{day:'2-digit',month:'short',year:'numeric'}); }
+function fmtMoney(n) { return 'PKR '+Number(n||0).toLocaleString(); }
+function uid() { return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
+function toast(msg, type='blue') {
+  const colors = { blue:'#4f8ef7', green:'#34d399', red:'#f87171', amber:'#f59e0b' };
+  const t = document.createElement('div');
+  t.style.cssText = `position:fixed;bottom:24px;right:24px;background:${colors[type]||colors.blue};color:${type==='green'?'#0f1117':'#fff'};padding:10px 18px;border-radius:8px;font-size:13px;z-index:9999;font-family:Sora,sans-serif;box-shadow:0 4px 20px rgba(0,0,0,0.4);`;
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(()=>t.remove(), 2800);
+}
+function canEdit() { return currentUser && (currentUser.role==='admin' || currentUser.role==='manager'); }
+
+// ══════════════════════════════════════
+//  NAVIGATION
+// ══════════════════════════════════════
+function showSection(name, el) {
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('section-'+name).classList.add('active');
+  if(el) el.classList.add('active');
+  const titles={dashboard:'Dashboard',inventory:'Inventory',purchases:'Purchases',issuances:'Issuances',demands:'Employee Demands',employees:'Employees',reports:'Export Reports',users:'Manage Users'};
+  const subs={dashboard:'GBI Resource Manager — Overview',inventory:'Track all items and stock levels',purchases:'Purchase history and records',issuances:'Items issued to employees',demands:'Employee item requests & approvals',employees:'Staff directory',reports:'Download data as Excel spreadsheets',users:'Manage user accounts and roles'};
+  document.getElementById('page-title').textContent = titles[name]||name;
+  document.getElementById('page-sub').textContent = subs[name]||'';
+  renderAll();
+}
+
+// ══════════════════════════════════════
+//  MODALS
+// ══════════════════════════════════════
+function openModal(id) {
+  document.getElementById(id).classList.add('open');
+  populateSelects();
+  if(id==='modal-purchase') document.getElementById('pur-date').value=today();
+  if(id==='modal-issue') document.getElementById('iss-date').value=today();
+}
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+window.onclick = e => { if(e.target.classList.contains('modal-overlay')) e.target.classList.remove('open'); };
+
+function populateSelects() {
+  ['pur-item','iss-item'].forEach(sid => {
+    const s = document.getElementById(sid); if(!s) return;
+    s.innerHTML = db.items.length ? db.items.map(i=>`<option value="${i.id}">${i.name} (${i.available} avail.)</option>`).join('') : '<option>No items added yet</option>';
+  });
+  ['iss-emp','dem-emp'].forEach(sid => {
+    const s = document.getElementById(sid); if(!s) return;
+    s.innerHTML = db.employees.length ? db.employees.map(e=>`<option value="${e.id}">${e.name} — ${e.dept||'N/A'}</option>`).join('') : '<option>No employees yet</option>';
+  });
+}
+
+// ══════════════════════════════════════
+//  ITEMS
+// ══════════════════════════════════════
+function addItem() {
+  const name = document.getElementById('item-name').value.trim();
+  if(!name) return alert('Item name required.');
+  const item = { id:uid(), name, category:document.getElementById('item-category').value, total:parseInt(document.getElementById('item-qty').value)||0, available:parseInt(document.getElementById('item-qty').value)||0, issued:0, cost:parseFloat(document.getElementById('item-cost').value)||0, desc:document.getElementById('item-desc').value.trim(), addedDate:today() };
+  item.available = item.total;
+  db.items.push(item); save(); closeModal('modal-item'); renderAll(); toast('Item added!','green');
+  document.getElementById('item-name').value=''; document.getElementById('item-desc').value='';
+}
+
+let invFilter='all';
+function filterInventory(f,el) {
+  invFilter=f;
+  document.querySelectorAll('#section-inventory .tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active'); renderInventory();
+}
+function renderInventory(search='') {
+  const tbody = document.getElementById('inventory-table');
+  let items = db.items.filter(i=>(invFilter==='all'||i.category===invFilter)&&(!search||i.name.toLowerCase().includes(search.toLowerCase())));
+  if(!items.length){tbody.innerHTML='<tr><td colspan="9" class="empty-state">No items found.</td></tr>';return;}
+  tbody.innerHTML = items.map(item=>{
+    const st = item.available===0 ? '<span class="badge badge-red">Out of Stock</span>' : item.available<=2 ? '<span class="badge badge-amber">Low Stock</span>' : '<span class="badge badge-green">In Stock</span>';
+    return `<tr><td><strong>${item.name}</strong><br><span style="font-size:11px;color:var(--muted)">${item.desc||''}</span></td><td><span class="badge badge-blue">${item.category}</span></td><td>${item.total}</td><td>${item.available}</td><td>${item.issued}</td><td style="font-family:var(--mono);font-size:12px;">${fmtMoney(item.cost)}</td><td>${st}</td><td><div class="actions-cell"><button class="action-btn" onclick="openIssueFor('${item.id}')">Issue</button><button class="action-btn edit" onclick="openEditItem('${item.id}')">Edit</button><button class="action-btn del" onclick="deleteItem('${item.id}')">Delete</button></div></td></tr>`;
+  }).join('');
+}
+function openEditItem(id) {
+  const item=db.items.find(i=>i.id===id); if(!item) return;
+  document.getElementById('edit-item-id').value=id;
+  document.getElementById('edit-item-name').value=item.name;
+  document.getElementById('edit-item-category').value=item.category;
+  document.getElementById('edit-item-qty').value=item.total;
+  document.getElementById('edit-item-cost').value=item.cost;
+  document.getElementById('edit-item-desc').value=item.desc||'';
+  openModal('modal-edit-item');
+}
+function saveEditItem() {
+  const id=document.getElementById('edit-item-id').value;
+  const item=db.items.find(i=>i.id===id); if(!item) return;
+  const newTotal=parseInt(document.getElementById('edit-item-qty').value)||0;
+  const diff=newTotal-item.total;
+  item.name=document.getElementById('edit-item-name').value.trim();
+  item.category=document.getElementById('edit-item-category').value;
+  item.cost=parseFloat(document.getElementById('edit-item-cost').value)||0;
+  item.desc=document.getElementById('edit-item-desc').value.trim();
+  item.total=newTotal;
+  item.available=Math.max(0,item.available+diff);
+  save(); closeModal('modal-edit-item'); renderAll(); toast('Item updated!','green');
+}
+function deleteItem(id) {
+  const item=db.items.find(i=>i.id===id); if(!item) return;
+  if(item.issued>0) return alert(`Cannot delete "${item.name}" — it has ${item.issued} unit(s) currently issued to employees. Return all items first.`);
+  if(!confirm(`Delete "${item.name}"? This cannot be undone.`)) return;
+  db.items=db.items.filter(i=>i.id!==id);
+  db.purchases=db.purchases.filter(p=>p.itemId!==id);
+  save(); renderAll(); toast('Item deleted.','red');
+}
+function openIssueFor(itemId) { openModal('modal-issue'); setTimeout(()=>{const s=document.getElementById('iss-item');if(s)s.value=itemId;},50); }
+
+// ══════════════════════════════════════
+//  PURCHASES
+// ══════════════════════════════════════
+function logPurchase() {
+  const itemId = document.getElementById('pur-item').value;
+  const qty = parseInt(document.getElementById('pur-qty').value)||0;
+  const cost = parseFloat(document.getElementById('pur-cost').value)||0;
+  if(!itemId||qty<1) return alert('Select an item and valid quantity.');
+  const item = db.items.find(i=>i.id===itemId);
+  if(!item) return alert('Item not found.');
+  item.total+=qty; item.available+=qty;
+  db.purchases.push({ id:uid(), itemId, itemName:item.name, vendor:document.getElementById('pur-vendor').value.trim(), qty, cost, total:qty*cost, invoice:document.getElementById('pur-invoice').value.trim(), date:document.getElementById('pur-date').value||today(), by:document.getElementById('pur-by').value.trim() });
+  save(); closeModal('modal-purchase'); renderAll(); toast('Purchase logged!','green');
+}
+function renderPurchases(search='') {
+  const tbody = document.getElementById('purchases-table');
+  let purs=[...db.purchases].reverse().filter(p=>!search||p.itemName.toLowerCase().includes(search.toLowerCase())||(p.vendor||'').toLowerCase().includes(search.toLowerCase()));
+  if(!purs.length){tbody.innerHTML='<tr><td colspan="9" class="empty-state">No purchases.</td></tr>';return;}
+  tbody.innerHTML=purs.map(p=>`<tr><td>${p.itemName}</td><td>${p.vendor||'—'}</td><td>${p.qty}</td><td style="font-family:var(--mono);font-size:12px;">${fmtMoney(p.cost)}</td><td style="font-family:var(--mono);font-size:12px;">${fmtMoney(p.total)}</td><td style="font-family:var(--mono);font-size:12px;">${p.invoice||'—'}</td><td>${fmtDate(p.date)}</td><td>${p.by||'—'}</td><td><div class="actions-cell"><button class="action-btn edit" onclick="openEditPurchase('${p.id}')">Edit</button><button class="action-btn del" onclick="deletePurchase('${p.id}')">Delete</button></div></td></tr>`).join('');
+}
+function openEditPurchase(id) {
+  const p=db.purchases.find(x=>x.id===id); if(!p) return;
+  document.getElementById('edit-pur-id').value=id;
+  document.getElementById('edit-pur-item').value=p.itemName;
+  document.getElementById('edit-pur-vendor').value=p.vendor||'';
+  document.getElementById('edit-pur-qty').value=p.qty;
+  document.getElementById('edit-pur-cost').value=p.cost;
+  document.getElementById('edit-pur-invoice').value=p.invoice||'';
+  document.getElementById('edit-pur-date').value=p.date||'';
+  document.getElementById('edit-pur-by').value=p.by||'';
+  openModal('modal-edit-purchase');
+}
+function saveEditPurchase() {
+  const id=document.getElementById('edit-pur-id').value;
+  const p=db.purchases.find(x=>x.id===id); if(!p) return;
+  const oldQty=p.qty;
+  const newQty=parseInt(document.getElementById('edit-pur-qty').value)||1;
+  const diff=newQty-oldQty;
+  const item=db.items.find(i=>i.id===p.itemId);
+  if(item){item.total+=diff; item.available+=diff;}
+  p.vendor=document.getElementById('edit-pur-vendor').value.trim();
+  p.qty=newQty;
+  p.cost=parseFloat(document.getElementById('edit-pur-cost').value)||0;
+  p.total=p.qty*p.cost;
+  p.invoice=document.getElementById('edit-pur-invoice').value.trim();
+  p.date=document.getElementById('edit-pur-date').value;
+  p.by=document.getElementById('edit-pur-by').value.trim();
+  save(); closeModal('modal-edit-purchase'); renderAll(); toast('Purchase updated!','green');
+}
+function deletePurchase(id) {
+  const p=db.purchases.find(x=>x.id===id); if(!p) return;
+  if(!confirm(`Delete this purchase record for "${p.itemName}"?`)) return;
+  const item=db.items.find(i=>i.id===p.itemId);
+  if(item){item.total-=p.qty; item.available=Math.max(0,item.available-p.qty);}
+  db.purchases=db.purchases.filter(x=>x.id!==id);
+  save(); renderAll(); toast('Purchase deleted.','red');
+}
+
+// ══════════════════════════════════════
+//  ISSUANCES
+// ══════════════════════════════════════
+function issueItem() {
+  const itemId=document.getElementById('iss-item').value;
+  const empId=document.getElementById('iss-emp').value;
+  const qty=parseInt(document.getElementById('iss-qty').value)||1;
+  const type=document.getElementById('iss-type').value;
+  const item=db.items.find(i=>i.id===itemId);
+  const emp=db.employees.find(e=>e.id===empId);
+  if(!item||!emp) return alert('Select valid item and employee.');
+  if(item.available<qty) return alert(`Only ${item.available} unit(s) available.`);
+  item.available-=qty; item.issued+=qty;
+  db.issuances.push({ id:uid(), itemId, itemName:item.name, empId, empName:emp.name, empDept:emp.dept, qty, type, date:document.getElementById('iss-date').value||today(), returnDate:document.getElementById('iss-return').value, notes:document.getElementById('iss-notes').value.trim(), status:'Active' });
+  save(); closeModal('modal-issue'); renderAll(); toast('Item issued!','green');
+}
+function returnItem(issId) {
+  const iss=db.issuances.find(i=>i.id===issId);
+  if(!iss||iss.status!=='Active') return;
+  if(!confirm(`Mark "${iss.itemName}" as returned from ${iss.empName}?`)) return;
+  const item=db.items.find(i=>i.id===iss.itemId);
+  if(item){item.available+=iss.qty;item.issued-=iss.qty;}
+  iss.status='Returned'; iss.actualReturn=today();
+  save(); renderAll(); toast('Item returned.','amber');
+}
+function renderIssuances(search='') {
+  const tbody=document.getElementById('issuances-table');
+  let iss=[...db.issuances].reverse().filter(i=>!search||i.itemName.toLowerCase().includes(search.toLowerCase())||i.empName.toLowerCase().includes(search.toLowerCase()));
+  if(!iss.length){tbody.innerHTML='<tr><td colspan="10" class="empty-state">No issuances.</td></tr>';return;}
+  tbody.innerHTML=iss.map(i=>{
+    const st=i.status==='Active'?'<span class="badge badge-green">Active</span>':'<span class="badge badge-gray">Returned</span>';
+    const tb=i.type.includes('Permanent')?'<span class="badge badge-blue">Asset</span>':'<span class="badge badge-amber">Official Use</span>';
+    const rb=i.status==='Active'&&canEdit()?`<button class="action-btn" onclick="returnItem('${i.id}')">Return</button>`:'';
+    return `<tr><td>${i.itemName}</td><td>${i.empName}</td><td>${i.empDept||'—'}</td><td>${i.qty}</td><td>${tb}</td><td>${fmtDate(i.date)}</td><td>${i.returnDate?fmtDate(i.returnDate):'—'}</td><td>${st}</td><td><div class="actions-cell">${rb}<button class="action-btn edit" onclick="openEditIssuance('${i.id}')">Edit</button><button class="action-btn del" onclick="deleteIssuance('${i.id}')">Delete</button></div></td></tr>`;
+  }).join('');
+}
+function openEditIssuance(id) {
+  const iss=db.issuances.find(i=>i.id===id); if(!iss) return;
+  document.getElementById('edit-iss-id').value=id;
+  document.getElementById('edit-iss-item').value=iss.itemName;
+  document.getElementById('edit-iss-emp').value=iss.empName;
+  document.getElementById('edit-iss-qty').value=iss.qty;
+  document.getElementById('edit-iss-type').value=iss.type;
+  document.getElementById('edit-iss-date').value=iss.date||'';
+  document.getElementById('edit-iss-return').value=iss.returnDate||'';
+  document.getElementById('edit-iss-notes').value=iss.notes||'';
+  openModal('modal-edit-issuance');
+}
+function saveEditIssuance() {
+  const id=document.getElementById('edit-iss-id').value;
+  const iss=db.issuances.find(i=>i.id===id); if(!iss) return;
+  const newQty=parseInt(document.getElementById('edit-iss-qty').value)||1;
+  if(iss.status==='Active'){
+    const item=db.items.find(i=>i.id===iss.itemId);
+    if(item){
+      const diff=newQty-iss.qty;
+      if(diff>0&&item.available<diff) return alert(`Only ${item.available} more unit(s) available.`);
+      item.available-=diff; item.issued+=diff;
+    }
+  }
+  iss.qty=newQty;
+  iss.type=document.getElementById('edit-iss-type').value;
+  iss.date=document.getElementById('edit-iss-date').value;
+  iss.returnDate=document.getElementById('edit-iss-return').value;
+  iss.notes=document.getElementById('edit-iss-notes').value.trim();
+  save(); closeModal('modal-edit-issuance'); renderAll(); toast('Issuance updated!','green');
+}
+function deleteIssuance(id) {
+  const iss=db.issuances.find(i=>i.id===id); if(!iss) return;
+  if(!confirm(`Delete issuance record for "${iss.itemName}" to ${iss.empName}?`)) return;
+  if(iss.status==='Active'){
+    const item=db.items.find(i=>i.id===iss.itemId);
+    if(item){item.available+=iss.qty; item.issued-=iss.qty;}
+  }
+  db.issuances=db.issuances.filter(i=>i.id!==id);
+  save(); renderAll(); toast('Issuance deleted.','red');
+}
+
+// ══════════════════════════════════════
+//  DEMANDS — extended with Purchase/Issuance workflow
+// ══════════════════════════════════════
+let demFilter='all';
+function filterDemands(f,el) {
+  demFilter=f;
+  document.querySelectorAll('#section-demands .tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active'); renderDemands();
+}
+
+function submitDemand() {
+  const empId=document.getElementById('dem-emp').value;
+  const item=document.getElementById('dem-item').value.trim();
+  const qty=parseInt(document.getElementById('dem-qty').value)||1;
+  const priority=document.getElementById('dem-priority').value;
+  const demType=document.getElementById('dem-type').value;
+  const reason=document.getElementById('dem-reason').value.trim();
+  const emp=db.employees.find(e=>e.id===empId);
+  if(!emp||!item) return alert('Select employee and enter item name.');
+  db.demands.push({
+    id:uid(), empId, empName:emp.name, empDept:emp.dept, item, qty, priority, demType, reason, date:today(),
+    status:'Pending',
+    purchaseStatus: demType==='Purchase Request' ? 'Pending' : null,
+    issuanceStatus: demType==='Issuance Request' ? 'Pending' : null,
+    rejectionReason:''
+  });
+  save(); closeModal('modal-demand'); renderAll(); toast('Demand submitted!');
+}
+
+function approveDemand(dId) {
+  const d=db.demands.find(x=>x.id===dId);
+  if(!d||!canEdit()) return;
+  d.status='Approved';
+  if(d.purchaseStatus==='Pending') d.purchaseStatus='Approved';
+  if(d.issuanceStatus==='Pending') d.issuanceStatus='Approved';
+  d.approvedBy=currentUser.username; d.approvedDate=today();
+  save(); renderAll(); toast('Demand approved.','green');
+}
+
+function openRejectModal(dId) {
+  document.getElementById('reject-id').value=dId;
+  document.getElementById('reject-reason').value='';
+  openModal('modal-reject');
+}
+
+function confirmReject() {
+  const dId=document.getElementById('reject-id').value;
+  const reason=document.getElementById('reject-reason').value.trim();
+  const d=db.demands.find(x=>x.id===dId);
+  if(!d||!canEdit()) return;
+  d.status='Rejected';
+  if(d.purchaseStatus==='Pending') d.purchaseStatus='Rejected';
+  if(d.issuanceStatus==='Pending') d.issuanceStatus='Rejected';
+  d.rejectionReason=reason;
+  d.rejectedBy=currentUser.username; d.rejectedDate=today();
+  save(); closeModal('modal-reject'); renderAll(); toast('Demand rejected.','red');
+}
+
+function setPurchaseStatus(dId, st) {
+  const d=db.demands.find(x=>x.id===dId);
+  if(!d||!canEdit()) return;
+  d.purchaseStatus=st;
+  if(st==='Completed') { d.purchaseCompletedDate=today(); }
+  save(); renderAll(); toast(`Purchase marked as ${st}.`, st==='Completed'?'green':'amber');
+}
+
+function setIssuanceStatus(dId, st) {
+  const d=db.demands.find(x=>x.id===dId);
+  if(!d||!canEdit()) return;
+  d.issuanceStatus=st;
+  if(st==='Issued') { d.issuedDate=today(); }
+  save(); renderAll(); toast(`Issuance marked as ${st}.`, st==='Issued'?'green':'amber');
+}
+
+const priorityColor={Low:'badge-gray',Medium:'badge-blue',High:'badge-amber',Urgent:'badge-red'};
+const statusColor={Pending:'badge-amber',Approved:'badge-green',Rejected:'badge-red'};
+const wfColor={Pending:'badge-amber',Approved:'badge-blue',Completed:'badge-green',Issued:'badge-green',Rejected:'badge-red','In Progress':'badge-purple'};
+
+function renderDemands() {
+  const list=document.getElementById('demands-list');
+  let demands=db.demands.filter(d=>demFilter==='all'||d.status===demFilter).slice().reverse();
+  if(!demands.length){list.innerHTML='<div class="empty-state">No demands found.</div>';return;}
+  list.innerHTML=demands.map(d=>{
+    const approveBtn = canEdit()&&d.status==='Pending' ? `<button class="btn btn-success" style="padding:5px 12px;font-size:11px;" onclick="approveDemand('${d.id}')">Approve</button>` : '';
+    const rejectBtn  = canEdit()&&d.status==='Pending' ? `<button class="btn" style="padding:5px 12px;font-size:11px;color:var(--accent4);border-color:var(--accent4);" onclick="openRejectModal('${d.id}')">Reject</button>` : '';
+
+    // Purchase workflow section
+    let purchaseSection='';
+    if(d.purchaseStatus!==null && d.purchaseStatus!==undefined) {
+      const pActions = canEdit()&&d.status==='Approved' ? `
+        <button class="action-btn" onclick="setPurchaseStatus('${d.id}','In Progress')" style="${d.purchaseStatus==='In Progress'?'color:var(--accent)':''}">In Progress</button>
+        <button class="action-btn" onclick="setPurchaseStatus('${d.id}','Completed')" style="${d.purchaseStatus==='Completed'?'color:var(--accent2)':''}">Completed</button>
+      ` : '';
+      purchaseSection=`<div class="demand-type-section">
+        <div class="demand-type-label">Purchase Status</div>
+        <div class="demand-type-row">
+          <span class="badge ${wfColor[d.purchaseStatus]||'badge-gray'}">${d.purchaseStatus}</span>
+          ${d.purchaseCompletedDate?`<span style="font-size:11px;color:var(--muted);">Completed ${fmtDate(d.purchaseCompletedDate)}</span>`:''}
+          ${pActions}
+        </div>
+      </div>`;
+    }
+
+    // Issuance workflow section
+    let issuanceSection='';
+    if(d.issuanceStatus!==null && d.issuanceStatus!==undefined) {
+      const iActions = canEdit()&&d.status==='Approved' ? `
+        <button class="action-btn" onclick="setIssuanceStatus('${d.id}','In Progress')" style="${d.issuanceStatus==='In Progress'?'color:var(--accent)':''}">In Progress</button>
+        <button class="action-btn" onclick="setIssuanceStatus('${d.id}','Issued')" style="${d.issuanceStatus==='Issued'?'color:var(--accent2)':''}">Mark Issued</button>
+      ` : '';
+      issuanceSection=`<div class="demand-type-section">
+        <div class="demand-type-label">Issuance Status</div>
+        <div class="demand-type-row">
+          <span class="badge ${wfColor[d.issuanceStatus]||'badge-gray'}">${d.issuanceStatus}</span>
+          ${d.issuedDate?`<span style="font-size:11px;color:var(--muted);">Issued ${fmtDate(d.issuedDate)}</span>`:''}
+          ${iActions}
+        </div>
+      </div>`;
+    }
+
+    const rejNote = d.status==='Rejected'&&d.rejectionReason ? `<div style="font-size:11px;color:var(--accent4);margin-top:6px;padding:6px 10px;background:rgba(248,113,113,0.07);border-radius:5px;">Rejected by ${d.rejectedBy||'—'}: ${d.rejectionReason}</div>` : '';
+    const approvedNote = d.status==='Approved'&&d.approvedBy ? `<div style="font-size:11px;color:var(--accent2);margin-top:4px;">Approved by ${d.approvedBy} on ${fmtDate(d.approvedDate)}</div>` : '';
+
+    return `<div class="demand-card">
+      <div class="demand-head">
+        <div>
+          <div class="demand-title">${d.item} <span style="font-weight:400;color:var(--muted);">× ${d.qty}</span>
+            <span class="badge badge-purple" style="font-size:10px;margin-left:6px;">${d.demType||'Demand'}</span>
+          </div>
+          <div class="demand-meta">${d.empName} · ${d.empDept||'N/A'} · ${fmtDate(d.date)}</div>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end;">
+          <span class="badge ${priorityColor[d.priority]||'badge-gray'}">${d.priority}</span>
+          <span class="badge ${statusColor[d.status]}">${d.status}</span>
+          <button class="action-btn edit" onclick="openEditDemand('${d.id}')" style="padding:3px 8px;font-size:10px;">Edit</button>
+          <button class="action-btn del" onclick="deleteDemand('${d.id}')" style="padding:3px 8px;font-size:10px;">Delete</button>
+        </div>
+      </div>
+      ${d.reason?`<div style="font-size:12px;color:var(--muted);margin-bottom:6px;">${d.reason}</div>`:''}
+      ${approvedNote}${rejNote}
+      ${purchaseSection}${issuanceSection}
+      ${(approveBtn||rejectBtn)?`<div class="demand-actions" style="margin-top:10px;">${approveBtn}${rejectBtn}</div>`:''}
+    </div>`;
+  }).join('');
+}
+
+function openEditDemand(id) {
+  const d=db.demands.find(x=>x.id===id); if(!d) return;
+  document.getElementById('edit-dem-id').value=id;
+  document.getElementById('edit-dem-emp').value=d.empName;
+  document.getElementById('edit-dem-item').value=d.item;
+  document.getElementById('edit-dem-qty').value=d.qty;
+  document.getElementById('edit-dem-priority').value=d.priority;
+  document.getElementById('edit-dem-type').value=d.demType||'Purchase Request';
+  document.getElementById('edit-dem-reason').value=d.reason||'';
+  openModal('modal-edit-demand');
+}
+function saveEditDemand() {
+  const id=document.getElementById('edit-dem-id').value;
+  const d=db.demands.find(x=>x.id===id); if(!d) return;
+  d.item=document.getElementById('edit-dem-item').value.trim();
+  d.qty=parseInt(document.getElementById('edit-dem-qty').value)||1;
+  d.priority=document.getElementById('edit-dem-priority').value;
+  d.demType=document.getElementById('edit-dem-type').value;
+  d.reason=document.getElementById('edit-dem-reason').value.trim();
+  save(); closeModal('modal-edit-demand'); renderAll(); toast('Demand updated!','green');
+}
+function deleteDemand(id) {
+  if(!confirm('Delete this demand? This cannot be undone.')) return;
+  db.demands=db.demands.filter(x=>x.id!==id);
+  save(); renderAll(); toast('Demand deleted.','red');
+}
+
+// ══════════════════════════════════════
+//  EMPLOYEES
+// ══════════════════════════════════════
+function addEmployee() {
+  const name=document.getElementById('emp-name').value.trim();
+  const empId=document.getElementById('emp-id').value.trim();
+  if(!name||!empId) return alert('Name and Employee ID required.');
+  if(db.employees.find(e=>e.empId===empId)) return alert('Employee ID already exists.');
+  db.employees.push({id:uid(),name,empId,designation:document.getElementById('emp-desig').value.trim(),dept:document.getElementById('emp-dept').value.trim(),contact:document.getElementById('emp-contact').value.trim(),addedDate:today()});
+  save(); closeModal('modal-employee'); renderAll(); toast('Employee added!','green');
+  ['emp-name','emp-id','emp-desig','emp-dept','emp-contact'].forEach(i=>document.getElementById(i).value='');
+}
+function renderEmployees(search='') {
+  const tbody=document.getElementById('employees-table');
+  let emps=db.employees.filter(e=>!search||e.name.toLowerCase().includes(search.toLowerCase())||(e.dept||'').toLowerCase().includes(search.toLowerCase()));
+  if(!emps.length){tbody.innerHTML='<tr><td colspan="7" class="empty-state">No employees.</td></tr>';return;}
+  tbody.innerHTML=emps.map(e=>{
+    const held=db.issuances.filter(i=>i.empId===e.id&&i.status==='Active').length;
+    return `<tr><td><strong>${e.name}</strong></td><td>${e.designation||'—'}</td><td>${e.dept||'—'}</td><td style="font-family:var(--mono);font-size:12px;">${e.empId}</td><td><span class="badge ${held>0?'badge-amber':'badge-gray'}">${held} item${held!==1?'s':''}</span></td><td>${e.contact||'—'}</td><td><div class="actions-cell"><button class="action-btn" onclick="viewEmployee('${e.id}')">View</button><button class="action-btn edit" onclick="openEditEmployee('${e.id}')">Edit</button><button class="action-btn del" onclick="deleteEmployee('${e.id}')">Delete</button></div></td></tr>`;
+  }).join('');
+}
+function openEditEmployee(id) {
+  const emp=db.employees.find(e=>e.id===id); if(!emp) return;
+  document.getElementById('edit-emp-id').value=id;
+  document.getElementById('edit-emp-name').value=emp.name;
+  document.getElementById('edit-emp-empid').value=emp.empId;
+  document.getElementById('edit-emp-desig').value=emp.designation||'';
+  document.getElementById('edit-emp-dept').value=emp.dept||'';
+  document.getElementById('edit-emp-contact').value=emp.contact||'';
+  openModal('modal-edit-employee');
+}
+function saveEditEmployee() {
+  const id=document.getElementById('edit-emp-id').value;
+  const emp=db.employees.find(e=>e.id===id); if(!emp) return;
+  const newEmpId=document.getElementById('edit-emp-empid').value.trim();
+  const conflict=db.employees.find(e=>e.empId===newEmpId&&e.id!==id);
+  if(conflict) return alert('Employee ID already used by another employee.');
+  emp.name=document.getElementById('edit-emp-name').value.trim();
+  emp.empId=newEmpId;
+  emp.designation=document.getElementById('edit-emp-desig').value.trim();
+  emp.dept=document.getElementById('edit-emp-dept').value.trim();
+  emp.contact=document.getElementById('edit-emp-contact').value.trim();
+  // update name in issuances
+  db.issuances.filter(i=>i.empId===id).forEach(i=>{i.empName=emp.name;i.empDept=emp.dept;});
+  save(); closeModal('modal-edit-employee'); renderAll(); toast('Employee updated!','green');
+}
+function deleteEmployee(id) {
+  const emp=db.employees.find(e=>e.id===id); if(!emp) return;
+  const held=db.issuances.filter(i=>i.empId===id&&i.status==='Active').length;
+  if(held>0) return alert(`Cannot delete ${emp.name} — they have ${held} item(s) currently issued. Return all items first.`);
+  if(!confirm(`Delete employee "${emp.name}"? This cannot be undone.`)) return;
+  db.employees=db.employees.filter(e=>e.id!==id);
+  save(); renderAll(); toast('Employee deleted.','red');
+}
+function viewEmployee(empId) {
+  const emp=db.employees.find(e=>e.id===empId);if(!emp)return;
+  const items=db.issuances.filter(i=>i.empId===empId&&i.status==='Active');
+  let msg=`Employee: ${emp.name}\nID: ${emp.empId}\nDept: ${emp.dept||'N/A'}\n\nItems Currently Held (${items.length}):\n`;
+  msg+=items.length?items.map(i=>`- ${i.itemName} × ${i.qty} [${i.type.includes('Perm')?'Asset':'Temp'}] issued ${fmtDate(i.date)}`).join('\n'):'No items held.';
+  alert(msg);
+}
+
+// ══════════════════════════════════════
+//  USERS (admin)
+// ══════════════════════════════════════
+function addUser() {
+  const username=document.getElementById('usr-name').value.trim();
+  const password=document.getElementById('usr-pass').value;
+  const role=document.getElementById('usr-role').value;
+  if(!username||!password) return alert('Username and password required.');
+  if(password.length<6) return alert('Password must be at least 6 characters.');
+  if(db.users.find(u=>u.username===username)) return alert('Username already exists.');
+  db.users.push({id:uid(),username,password,role,addedDate:today()});
+  save(); closeModal('modal-user'); renderUsers(); toast('User created!','green');
+}
+function deleteUser(uid) {
+  if(currentUser&&db.users.find(u=>u.id===uid)?.username===currentUser.username) return alert("You can't delete your own account.");
+  if(!confirm('Delete this user?')) return;
+  db.users=db.users.filter(u=>u.id!==uid);
+  save(); renderUsers(); toast('User deleted.','red');
+}
+function renderUsers() {
+  const tbody=document.getElementById('users-table');if(!tbody)return;
+  const roleColor={admin:'badge-red',manager:'badge-amber',staff:'badge-blue'};
+  tbody.innerHTML=db.users.map(u=>`<tr><td><strong>${u.username}</strong></td><td><span class="badge ${roleColor[u.role]||'badge-gray'}">${u.role}</span></td><td>${fmtDate(u.addedDate||today())}</td><td>${u.username!=='admin'?`<button class="action-btn" onclick="deleteUser('${u.id}')" style="color:var(--accent4);">Delete</button>`:''}</td></tr>`).join('');
+}
+
+// ══════════════════════════════════════
+//  DASHBOARD
+// ══════════════════════════════════════
+function renderDashboard() {
+  document.getElementById('stat-items').textContent=db.items.reduce((s,i)=>s+i.total,0);
+  document.getElementById('stat-available').textContent=db.items.reduce((s,i)=>s+i.available,0);
+  document.getElementById('stat-issued').textContent=db.items.reduce((s,i)=>s+i.issued,0);
+  document.getElementById('stat-demands').textContent=db.demands.filter(d=>d.status==='Pending').length;
+  const dp=document.getElementById('dash-purchases');
+  const rp=[...db.purchases].reverse().slice(0,5);
+  dp.innerHTML=rp.length?rp.map(p=>`<tr><td>${p.itemName}</td><td>${p.qty}</td><td style="font-family:var(--mono);font-size:11px;">${fmtMoney(p.total)}</td><td style="font-size:11px;">${fmtDate(p.date)}</td></tr>`).join(''):'<tr><td colspan="4" class="empty-state">None yet</td></tr>';
+  const di=document.getElementById('dash-issuances');
+  const ri=[...db.issuances].reverse().slice(0,5);
+  di.innerHTML=ri.length?ri.map(i=>`<tr><td>${i.itemName}</td><td>${i.empName}</td><td><span class="badge ${i.type.includes('Perm')?'badge-blue':'badge-amber'}" style="font-size:10px;">${i.type.includes('Perm')?'Asset':'Temp'}</span></td><td style="font-size:11px;">${fmtDate(i.date)}</td></tr>`).join(''):'<tr><td colspan="4" class="empty-state">None yet</td></tr>';
+}
+
+function renderAll() {
+  renderDashboard(); renderInventory(); renderPurchases(); renderIssuances();
+  renderDemands(); renderEmployees(); renderUsers();
+}
+
+// ══════════════════════════════════════
+//  EXCEL EXPORT
+// ══════════════════════════════════════
+function exportSheet(type) {
+  if(!window.XLSX) { toast('Export library not loaded yet. Try again.','red'); return; }
+  const wb = XLSX.utils.book_new();
+
+  const addSheet = (name, rows) => {
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+    XLSX.utils.book_append_sheet(wb, ws, name);
+  };
+
+  if(type==='inventory'||type==='all') {
+    const rows=[['Item Name','Category','Total Qty','Available','Issued','Unit Cost (PKR)','Description','Date Added']];
+    db.items.forEach(i=>rows.push([i.name,i.category,i.total,i.available,i.issued,i.cost,i.desc||'',i.addedDate]));
+    addSheet('Inventory',rows);
+  }
+  if(type==='purchases'||type==='all') {
+    const rows=[['Item','Vendor','Quantity','Unit Cost (PKR)','Total (PKR)','Invoice #','Date','Added By']];
+    db.purchases.forEach(p=>rows.push([p.itemName,p.vendor||'',p.qty,p.cost,p.total,p.invoice||'',p.date,p.by||'']));
+    addSheet('Purchases',rows);
+  }
+  if(type==='issuances'||type==='all') {
+    const rows=[['Item','Employee','Department','Qty','Type','Issue Date','Expected Return','Actual Return','Status','Notes']];
+    db.issuances.forEach(i=>rows.push([i.itemName,i.empName,i.empDept||'',i.qty,i.type,i.date,i.returnDate||'',i.actualReturn||'',i.status,i.notes||'']));
+    addSheet('Issuances',rows);
+  }
+  if(type==='demands'||type==='all') {
+    const rows=[['Employee','Department','Item','Qty','Priority','Demand Type','Purchase Status','Issuance Status','Overall Status','Reason','Submitted Date','Approved By','Approved Date','Rejected By','Rejection Reason']];
+    db.demands.forEach(d=>rows.push([d.empName,d.empDept||'',d.item,d.qty,d.priority,d.demType||'',d.purchaseStatus||'N/A',d.issuanceStatus||'N/A',d.status,d.reason||'',d.date,d.approvedBy||'',d.approvedDate||'',d.rejectedBy||'',d.rejectionReason||'']));
+    addSheet('Demands',rows);
+  }
+  if(type==='employees'||type==='all') {
+    const rows=[['Name','Employee ID','Designation','Department','Contact','Items Held','Date Added']];
+    db.employees.forEach(e=>{
+      const held=db.issuances.filter(i=>i.empId===e.id&&i.status==='Active').length;
+      rows.push([e.name,e.empId,e.designation||'',e.dept||'',e.contact||'',held,e.addedDate]);
+    });
+    addSheet('Employees',rows);
+  }
+
+  const filename = `GBI_Report_${type}_${today()}.xlsx`;
+  XLSX.writeFile(wb, filename);
+  toast(`Exported: ${filename}`,'green');
+}
+
+renderAll();
+</script>
+</body>
+</html>
